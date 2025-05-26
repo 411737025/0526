@@ -1,7 +1,8 @@
 let video;
-let facemesh;
+let handpose;
 let predictions = [];
-let handShape = "paper"; // "paper", "scissors", "rock"
+let handShape = ""; // "paper", "scissors", "rock"
+let idx = null;
 
 function setup() {
   createCanvas(640, 480).position(
@@ -12,9 +13,17 @@ function setup() {
   video.size(width, height);
   video.hide();
 
-  facemesh = ml5.facemesh(video, modelReady);
-  facemesh.on('predict', results => {
+  handpose = ml5.handpose(video, modelReady);
+  handpose.on('predict', results => {
     predictions = results;
+    if (predictions.length > 0) {
+      handShape = detectHandShape(predictions[0]);
+      // 根據手勢決定畫哪個點
+      if (handShape === "paper") idx = 94;
+      else if (handShape === "scissors") idx = 151;
+      else if (handShape === "rock") idx = 123;
+      else idx = null;
+    }
   });
 }
 
@@ -25,20 +34,9 @@ function modelReady() {
 function draw() {
   image(video, 0, 0, width, height);
 
-  if (predictions.length > 0) {
-    const keypoints = predictions[0].scaledMesh;
-    let idx = null;
-
-    // 根據手部形狀決定要畫哪個點
-    if (handShape === "paper") {
-      idx = 94;
-    } else if (handShape === "scissors") {
-      idx = 151;
-    } else if (handShape === "rock") {
-      idx = 123;
-    }
-
-    if (idx !== null && keypoints[idx]) {
+  if (predictions.length > 0 && idx !== null) {
+    const keypoints = predictions[0].landmarks;
+    if (keypoints[idx]) {
       const [x, y] = keypoints[idx];
       noFill();
       stroke(255, 0, 0);
@@ -46,4 +44,20 @@ function draw() {
       ellipse(x, y, 50, 50);
     }
   }
+}
+
+// 偵測手勢（簡單判斷，僅供參考）
+function detectHandShape(prediction) {
+  const landmarks = prediction.landmarks;
+  // 取得各指尖座標
+  const tips = [8, 12, 16, 20].map(i => landmarks[i][1]); // y座標
+  const palm = landmarks[0][1]; // 手腕y座標
+
+  // 布：所有指尖都比手腕高
+  if (tips.every(y => y < palm)) return "paper";
+  // 剪刀：食指與中指比手腕高，無名指與小指比手腕低
+  if (tips[0] < palm && tips[1] < palm && tips[2] > palm && tips[3] > palm) return "scissors";
+  // 石頭：所有指尖都比手腕低
+  if (tips.every(y => y > palm)) return "rock";
+  return "";
 }
