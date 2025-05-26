@@ -38,8 +38,12 @@ function setup() {
 function draw() {
   image(video, 0, 0, width, height);
 
-  // 只要有臉部特徵點且idx有設定
-  if (facePredictions.length > 0 && idx !== null) {
+  // 只要有臉部特徵點且idx有設定且有偵測到手部形狀才畫圓
+  if (
+    facePredictions.length > 0 &&
+    idx !== null &&
+    (handShape === "paper" || handShape === "scissors" || handShape === "rock")
+  ) {
     const keypoints = facePredictions[0].scaledMesh;
     if (keypoints[idx]) {
       const [x, y] = keypoints[idx];
