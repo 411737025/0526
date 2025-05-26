@@ -1,6 +1,7 @@
 let video;
-let handpose;
-let predictions = [];
+let handpose, facemesh;
+let handPredictions = [];
+let facePredictions = [];
 let handShape = ""; // "paper", "scissors", "rock"
 let idx = null;
 
@@ -13,29 +14,33 @@ function setup() {
   video.size(width, height);
   video.hide();
 
-  handpose = ml5.handpose(video, modelReady);
+  // 啟動 handpose
+  handpose = ml5.handpose(video, () => {});
   handpose.on('predict', results => {
-    predictions = results;
-    if (predictions.length > 0) {
-      handShape = detectHandShape(predictions[0]);
-      // 根據手勢決定畫哪個點
+    handPredictions = results;
+    if (handPredictions.length > 0) {
+      handShape = detectHandShape(handPredictions[0]);
+      // 根據手勢決定要畫的臉部特徵點
       if (handShape === "paper") idx = 94;
       else if (handShape === "scissors") idx = 151;
       else if (handShape === "rock") idx = 123;
       else idx = null;
     }
   });
-}
 
-function modelReady() {
-  // 模型載入完成
+  // 啟動 facemesh
+  facemesh = ml5.facemesh(video, () => {});
+  facemesh.on('predict', results => {
+    facePredictions = results;
+  });
 }
 
 function draw() {
   image(video, 0, 0, width, height);
 
-  if (predictions.length > 0 && idx !== null) {
-    const keypoints = predictions[0].landmarks;
+  // 只要有臉部特徵點且idx有設定
+  if (facePredictions.length > 0 && idx !== null) {
+    const keypoints = facePredictions[0].scaledMesh;
     if (keypoints[idx]) {
       const [x, y] = keypoints[idx];
       noFill();
