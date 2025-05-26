@@ -14,6 +14,12 @@ function setup() {
   video.size(width, height);
   video.hide();
 
+ // 啟動 facemesh
+  facemesh = ml5.facemesh(video, () => {});
+  facemesh.on('predict', results => {
+    facePredictions = results;
+  });
+  
   // 啟動 handpose
   handpose = ml5.handpose(video, () => {});
   handpose.on('predict', results => {
@@ -28,11 +34,11 @@ function setup() {
     }
   });
 
-  // 啟動 facemesh
-  facemesh = ml5.facemesh(video, () => {});
-  facemesh.on('predict', results => {
-    facePredictions = results;
-  });
+
+}
+
+function modelReady() {
+  // 模型載入完成，可選擇顯示訊息
 }
 
 function draw() {
